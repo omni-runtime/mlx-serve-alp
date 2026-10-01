@@ -1,0 +1,14 @@
+{
+  "engine_binary": "/path/to/mlx-serve",
+  "model_directory": "/path/to/Qwen3-4B-Instruct-2507-4bit",
+  "python": "/path/to/venv/bin/python",
+  "config": "/path/to/config.json",
+  "engine_port": 11236,
+  "port": 11237,
+  "context_length": 32768,
+  "listen": "127.0.0.1",
+  "secret_files": {
+    "MLX_ALP_ENGINE_KEY": "/path/to/secrets/engine-key",
+    "MLX_ALP_API_KEY": "/path/to/secrets/frontend-key"
+  }
+}

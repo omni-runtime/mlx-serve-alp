@@ -1,0 +1,78 @@
+{
+  "catalogs": {
+    "demo-text": {
+      "allowed_operations": [
+        "agent_definition_generate",
+        "agent_call",
+        "agent_capability_call",
+        "list_agent_capabilities",
+        "tool_call",
+        "agent_final"
+      ],
+      "agents": {
+        "demo_assistant": {
+          "description": "Example assistant supplied by the host",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "capabilities": {
+            "echo_message": {
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      },
+      "tools": {
+        "math.add": {
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "number"
+              },
+              "b": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "text.echo": {
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "final_format": "text"
+    }
+  },
+  "engine_url": "http://127.0.0.1:11236",
+  "model": "local/alp",
+  "upstream_model": "Qwen3-4B-Instruct-2507-4bit"
+}

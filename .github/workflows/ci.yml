@@ -1,0 +1,40 @@
+name: CI
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  public-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install build ruff
+      - run: ruff check src tests scripts
+      - run: python -m build
+  authorized-tests:
+    if: vars.PRIVATE_DEPENDENCY_TESTS == 'enabled' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: omni-runtime/alp_schema_mcp
+          ref: c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8
+          token: ${{ secrets.PRIVATE_DEPENDENCIES_TOKEN }}
+          path: .deps/alp_schema_mcp
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: omni-runtime/vllm-alp
+          ref: cf65664da05176b0b6775a718edbc9bf5384073b
+          token: ${{ secrets.PRIVATE_DEPENDENCIES_TOKEN }}
+          path: .deps/vllm-alp
+          persist-credentials: false
+      - run: python -m pip install ./.deps/alp_schema_mcp ./.deps/vllm-alp
+      - run: python -m pip install -e '.[test]'
+      - run: pytest -q

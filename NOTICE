@@ -1,0 +1,6 @@
+mlx-serve-alp
+Copyright 2026 omni-runtime contributors
+
+This project integrates separately installed MLX-Serve, vllm-alp and
+alp-schema-mcp. Those projects and model weights retain their own licenses.
+No engine binaries, model weights, credentials or upstream source are bundled.

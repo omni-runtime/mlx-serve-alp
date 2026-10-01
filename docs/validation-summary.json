@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-02",
+  "real_model_generation": true,
+  "operation_selection": "explicit",
+  "retry_count": 0,
+  "golden_answers_in_prompts": false,
+  "runtime_execution": "not_run",
+  "model_quality_acceptance": "not_all_cases_passed",
+  "engines": {
+    "mlx-serve": {
+      "scenario_passed": 17,
+      "total": 20,
+      "protocol_valid": 18,
+      "adapter_accepted": 18,
+      "failed_cases": [
+        "P02",
+        "P04",
+        "P13"
+      ],
+      "boundary_checks_passed": 8,
+      "boundary_checks_total": 8
+    },
+    "vllm": {
+      "scenario_passed": 16,
+      "total": 20,
+      "protocol_valid": 20,
+      "adapter_accepted": 20,
+      "failed_cases": [
+        "P02",
+        "P03",
+        "P04",
+        "P19"
+      ],
+      "boundary_checks_passed": 8,
+      "boundary_checks_total": 8
+    }
+  }
+}
