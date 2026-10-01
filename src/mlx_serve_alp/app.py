@@ -87,7 +87,7 @@ def create_app(config: MLXConfig, *, transport=None):
         yield
         await client.aclose()
 
-    app = FastAPI(title="MLX-Serve ALP", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="MLX-Serve ALP", version="0.2.0", lifespan=lifespan)
     gate = asyncio.Semaphore(config.max_concurrent)
 
     # Pure ASGI wrapper keeps the semaphore held until the full stream closes.

@@ -28,7 +28,7 @@ See [dependency access](docs/dependencies.md).
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install /path/to/alp_schema_mcp-0.3.0-py3-none-any.whl
-python -m pip install /path/to/vllm_alp-0.1.1-py3-none-any.whl
+python -m pip install /path/to/vllm_alp-0.2.0-py3-none-any.whl
 python -m pip install -e '.[test]'
 mlx-serve-alp check --config examples/config.json
 ```
@@ -81,6 +81,16 @@ Its unions, patterns and number ranges are not fully enforced during sampling.
 the original protocol and catalog on completion. These limits differ from
 XGrammar; this package never claims full grammar equivalence. Model quality,
 resource existence, authorization and actual execution are separate concerns.
+
+Catalogs may include server-owned `payload_constraints` for required payload
+fields and fixed task values. They narrow the existing contract and remain subject
+to full final validation. Clients select a catalog; they cannot submit constraints.
+See [task constraints](docs/task-constraints.md). Prompt rendering is shared with vllm-alp. Set `compact_prompt: true` to omit
+unreachable schema definitions while preserving descriptions. Set
+`explicit_definition_output: true` to require generated definitions to include
+`output`. Both options default to false and should be evaluated on your model;
+legacy definitions retain the protocol's optional-output validation semantics. Omitted agent arguments are accepted only
+when the target input schema permits the protocol's default empty object.
 
 ## Test
 

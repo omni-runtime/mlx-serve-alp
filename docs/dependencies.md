@@ -5,7 +5,7 @@ This adapter is Apache-2.0 open source. It depends on two **private** repositori
 | Package | Required version | Repository |
 |---|---|---|
 | alp-schema-mcp | 0.3.0 | https://github.com/omni-runtime/alp_schema_mcp |
-| vllm-alp | 0.1.1 | https://github.com/omni-runtime/vllm-alp |
+| vllm-alp | 0.2.0 | https://github.com/omni-runtime/vllm-alp |
 
 Obtain access or authorized wheels from their maintainers. Their code and
 contracts are not included in this repository and are not covered by this
@@ -24,7 +24,7 @@ For reproducible installs, use these pinned source revisions (also used by the
 opt-in CI job):
 
 - `alp_schema_mcp`: `c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8`
-- `vllm-alp`: `cf65664da05176b0b6775a718edbc9bf5384073b`
+- `vllm-alp`: `c12d97f79ac5e05f495b9bc8d743f5c3b12b0569`
 
 Do not embed access tokens in clone URLs, requirements files, logs or reports. The original producer
 suite remains in the authorized protocol checkout; `run_producer.py --suite`

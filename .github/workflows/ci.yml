@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: omni-runtime/vllm-alp
-          ref: cf65664da05176b0b6775a718edbc9bf5384073b
+          ref: c12d97f79ac5e05f495b9bc8d743f5c3b12b0569
           token: ${{ secrets.PRIVATE_DEPENDENCIES_TOKEN }}
           path: .deps/vllm-alp
           persist-credentials: false

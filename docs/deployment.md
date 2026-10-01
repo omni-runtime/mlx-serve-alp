@@ -18,10 +18,11 @@ contents into the child environment and does not place them in command arguments
 The native engine binds loopback only. Expose the authenticated frontend through
 your trusted network or TLS gateway.
 
-The trial deployment uses a separate native MLX-Serve process for ALP so existing
-H3 and embedding model processes can coexist. Model paths and services are
-operator-owned configuration and are not embedded in the package. `local/alp`
-is an API alias independent of the upstream model directory name.
+The adapter connects to an independently managed native MLX-Serve process.
+Model paths, memory capacity and service residency are operator-owned configuration
+and are not embedded in the package. `local/alp` is an API alias independent of
+the upstream model directory name. Health checks do not establish concurrent
+inference capacity for multiple model processes.
 
 The adapter does not register an ALP route in Semantic Router or Envoy. Use its
 direct endpoint unless you explicitly configure a gateway route. Existing chat

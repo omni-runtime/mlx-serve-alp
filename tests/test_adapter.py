@@ -197,3 +197,30 @@ async def test_actual_route_lifecycle(config, mode, stream):
 def test_config_rejects_remote_or_credential_urls(config, url):
     with pytest.raises(ValueError):
         MLXConfig.model_validate({**config.model_dump(), "engine_url": url})
+
+
+def test_trusted_constraints_survive_mlx_projection_and_final_validation(config):
+    from vllm_alp.catalog import PayloadConstraints
+
+    catalog = config.catalogs["demo-text"].model_copy(deep=True)
+    literal = "Exact Unicode text。"
+    catalog.payload_constraints["agent_final"] = PayloadConstraints(
+        fixed_values={"/output/value": literal}
+    )
+    compiler = MLXConstraintCompiler()
+    compiled = compiler.compile(
+        ALPOptions(allowed_operations=["agent_final"], catalog_ref="demo-text"), catalog
+    )
+    wire = json.loads(compiled.grammar)
+    value = wire["properties"]["payload"]["properties"]["output"]["properties"]["value"]
+    assert value == {"const": literal}
+    good = {**ACTION, "payload": {"output": {"format": "text", "value": literal}}}
+    parser = ALPParser(compiled, compiler.contracts, codec="canonical")
+    parser.feed(json.dumps(good))
+    assert parser.finish("stop") == good
+    bad = {**good, "payload": {"output": {"format": "text", "value": "changed"}}}
+    parser = ALPParser(compiled, compiler.contracts, codec="canonical")
+    parser.feed(json.dumps(bad))
+    with pytest.raises(ALPError) as error:
+        parser.finish("stop")
+    assert error.value.code == "INVALID_CALL_ARGUMENTS"

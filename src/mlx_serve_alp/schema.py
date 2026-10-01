@@ -134,6 +134,9 @@ class MLXConstraintCompiler(ALPConstraintCompiler):
         projected, residual = {}, []
         for operation, schema in schemas.items():
             projected[operation], checks = project_schema(schema)
+            if operation == "agent_definition_generate" and catalog.explicit_definition_output:
+                payload = projected[operation]["properties"]["payload"]
+                payload["required"] = list(dict.fromkeys([*payload.get("required", []), "output"]))
             residual.extend({**item, "path": "/" + operation + item["path"]} for item in checks)
         # Keep a constrained object even for a multi-operation union. Upstream
         # relaxes a root anyOf to arbitrary JSON, losing the envelope constraints.

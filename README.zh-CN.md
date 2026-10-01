@@ -18,7 +18,7 @@ MLX-Serve 是原生二进制，没有 vLLM 的 Python endpoint plugin 接口。
 本仓库不分发依赖源码、协议契约或原始测试包，详见 [依赖说明](docs/dependencies.md)。
 
 需要 Python 3.12+、MLX-Serve 26.9.6，以及对应模型权重。
-先安装 `alp-schema-mcp==0.3.0` 和 `vllm-alp==0.1.1` 的 wheel 或源码，
+先安装 `alp-schema-mcp==0.3.0` 和 `vllm-alp==0.2.0` 的 wheel 或源码，
 再运行 `pip install -e '.[test]'`。详细命令见英文 README。
 
 `examples/config.json` 集中配置引擎地址、模型名称和目录；示例目录全部是
@@ -47,6 +47,13 @@ mlx-serve-alp serve --config examples/config.json --host 127.0.0.1 --port 11237
 MLX-Serve 的 JSON mask 只支持部分约束。联合分支关联、正则、数值范围等
 在完整输出上再次严格验证，并在 `alp.residual_checks` 报告。
 约束投影不是完整 XGrammar 等价实现，不能保证生成阶段满足全部协议约束。
+
+服务端目录可配置 `payload_constraints`，指定任务要求的必填字段和固定值，
+只能收窄现有协议与目录。客户端不能直接覆盖约束，详见[任务约束](docs/task-constraints.md)。
+提示词渲染与 vllm-alp 共享。`compact_prompt: true` 可裁剪未引用定义并保留说明；
+`explicit_definition_output: true` 可要求生成时显式填写 `output`。两项默认关闭，
+应针对实际模型评估。最终校验仍兼容协议默认值；参数 Schema 允许空对象时，
+Agent 调用可以省略参数。
 
 ## 验证
 

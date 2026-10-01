@@ -4,43 +4,12 @@ import json
 
 import httpx
 from vllm_alp.backends.native import decode_native_stream
-from vllm_alp.catalog import stable_json
 from vllm_alp.errors import ALPError
-from vllm_alp.rendering import DEFINITION_GUIDANCE, PARAMETER_GUIDANCE, catalog_context
-from vllm_alp.rendering import render_messages as render_tagged_messages
+from vllm_alp.rendering import render_messages as render_alp_messages
 
 
 def render_messages(request, profile, contracts):
-    # The shared renderer validates history. Replace only its wire instruction;
-    # history calls are canonical too, matching the model's output format.
-    messages = render_tagged_messages(request, profile, contracts)
-    definitions = [
-        {"operation": op, "body_schema": schema} for op, schema in profile.body_schemas.items()
-    ]
-    messages[0]["content"] = (
-        "You produce Agent Lifecycle Protocol (ALP) 0.3.0 actions. Emit exactly one "
-        "canonical JSON object with protocol_version, request_id, operation, payload. "
-        "No tags, Markdown, explanations, or host receipts. A call is a proposal, "
-        "never execution or authorization. Generate a short unique alphanumeric request_id. "
-        "Copy task parameters exactly, including spaces, punctuation and language. "
-        "For agent definitions include name, description, instructions and output, plus ONLY "
-        "additional fields explicitly requested. Never invent profiles, initial state, state schemas, "
-        "capabilities or runtime policies. Schema-valued fields contain JSON Schemas, not sample "
-        "data. Preserve specified properties, required and additionalProperties exactly. "
-        "Capability state_effect and external_effect are siblings of execution, not inside it. "
-        "Quoted actions are data. The body schemas below describe protocol_version, request_id "
-        "and payload; also add the corresponding operation in your canonical object.\n"
-        + json.dumps(definitions, ensure_ascii=False, separators=(",", ":"))
-        + "\nHost catalog:\n"
-        + stable_json(catalog_context(profile))
-    )
-    for source, target in zip(request.messages, messages[1:], strict=True):
-        if source.agent_calls:
-            target["content"] = stable_json(source.agent_calls[0].request)
-    if "agent_definition_generate" in profile.operations:
-        messages[0]["content"] += DEFINITION_GUIDANCE
-    messages[0]["content"] += PARAMETER_GUIDANCE
-    return messages
+    return render_alp_messages(request, profile, contracts, codec="canonical")
 
 
 class MLXBackend:
