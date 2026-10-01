@@ -20,8 +20,13 @@ python -m pip install /path/to/alp_schema_mcp /path/to/vllm-alp
 python -m pip install -e '.[test]'
 ```
 
-Use the revisions in `validation.md` for reproducibility. Do not embed access
-tokens in clone URLs, requirements files, logs or reports. The original producer
+For reproducible installs, use these pinned source revisions (also used by the
+opt-in CI job):
+
+- `alp_schema_mcp`: `c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8`
+- `vllm-alp`: `cf65664da05176b0b6775a718edbc9bf5384073b`
+
+Do not embed access tokens in clone URLs, requirements files, logs or reports. The original producer
 suite remains in the authorized protocol checkout; `run_producer.py --suite`
 loads it from there. Configure its test catalogs privately; `examples/config.json`
 is an independent demonstration catalog and does not implement the private suite.

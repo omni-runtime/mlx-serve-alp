@@ -46,7 +46,7 @@ mlx-serve-alp serve --config examples/config.json --host 127.0.0.1 --port 11237
 
 MLX-Serve 的 JSON mask 只支持部分约束。联合分支关联、正则、数值范围等
 在完整输出上再次严格验证，并在 `alp.residual_checks` 报告。
-约束投影不是完整 XGrammar 等价实现；具体引擎限制见验证报告。
+约束投影不是完整 XGrammar 等价实现，不能保证生成阶段满足全部协议约束。
 
 ## 验证
 
@@ -64,7 +64,7 @@ python scripts/run_producer.py --suite /path/to/alp_schema_mcp \
 不会自动修复、重试或丢弃失败结果。操作类型由测试请求明确选择。
 静态样本、真实生成、Runtime 执行是三类独立证据。
 
-**验收状态：接口与静态校验测试已通过，真实模型任务匹配尚未全量通过。**
-详细结果见 [验证报告](docs/validation.md)。
+请针对实际任务验证所选模型：符合 Schema 的动作仍可能填写错误的参数。
+验证报告和原始证据仅保留在本地，不提交或推送到此仓库。
 参见 [贡献指南](CONTRIBUTING.md)、[安全边界](SECURITY.md)。
 代码采用 [Apache-2.0](LICENSE)；模型和引擎分别遵循其自身许可。

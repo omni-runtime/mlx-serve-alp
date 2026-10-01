@@ -12,6 +12,7 @@ Live tests require an operator-provided engine and `ALP_API_KEY`. Use
 failed cases and the exact engine/model revisions. Never inject golden answers,
 repair model output or report static fixtures as inference evidence.
 
-Use issues for reproducible bugs and pull requests for changes. Remove secrets,
-private network addresses and real user prompts from public reports. Contributions
-are accepted under Apache-2.0.
+Keep validation reports and raw evidence locally, outside the source tree. Do not
+commit or push them to this repository. Use issues for reproducible bugs and pull
+requests for changes; omit secrets, private network addresses and real user
+prompts. Contributions are accepted under Apache-2.0.

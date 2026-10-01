@@ -9,5 +9,9 @@ dist/
 .state/
 instances/
 reports/
+/results/
+/validation-reports/
+/docs/validation*.md
+/docs/validation*.json
 *.env
 .DS_Store

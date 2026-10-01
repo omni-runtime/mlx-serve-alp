@@ -99,10 +99,10 @@ separate protocol/scenario results; it never reads golden answers into prompts.
 Supply the frontend key through `ALP_API_KEY`. Static fixture self-tests, model
 generation scores and Runtime execution tests are distinct evidence.
 
-**Acceptance status:** integration tests pass, but the complete real-model task
-suite is not yet all green. See [validation](docs/validation.md) and its final
-per-engine results before selecting a deployment model.
+Validate your chosen model against your application's tasks: schema-valid actions
+can still contain incorrect arguments. Keep validation reports and raw evidence
+locally; do not commit or push them to this repository.
 
-See [validation](docs/validation.md), [security](SECURITY.md) and
+See [security](SECURITY.md) and
 [contributing](CONTRIBUTING.md). Licensed under [Apache-2.0](LICENSE).
 Model weights and the separately installed engine retain their own licenses.

@@ -1,5 +1,5 @@
 include LICENSE NOTICE README.md README.zh-CN.md CHANGELOG.md CONTRIBUTING.md SECURITY.md
 recursive-include examples *.json *.plist
-recursive-include docs *.md *.json
+include docs/deployment.md docs/dependencies.md
 recursive-include scripts *.py
 recursive-include tests *.py
