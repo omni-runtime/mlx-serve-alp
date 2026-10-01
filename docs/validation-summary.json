@@ -33,6 +33,25 @@
       ],
       "boundary_checks_passed": 8,
       "boundary_checks_total": 8
+    },
+    "vllm-omni": {
+      "scenario_passed": 16,
+      "total": 20,
+      "protocol_valid": 20,
+      "adapter_accepted": 20,
+      "failed_cases": [
+        "P02",
+        "P03",
+        "P04",
+        "P19"
+      ],
+      "boundary_checks_passed": 8,
+      "boundary_checks_total": 8
     }
+  },
+  "ci": {
+    "public_package": "passed",
+    "private_dependency_tests": "skipped (operator credential not configured)",
+    "local_unit_tests": "145 passed"
   }
 }

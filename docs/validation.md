@@ -45,6 +45,27 @@ The live runner saves exact SSE deltas, terminal events and full raw output.
 The acceptance count requires both the original scenario checker and a completed,
 validated ALP response with executed=false and authorized=false.
 
+Final fixed-version results (temperature 0, seed 42, max_tokens 2048):
+
+| Engine | Protocol-valid raw outputs | Full task acceptance | Live boundaries |
+|---|---:|---:|---:|
+| MLX-Serve / Qwen3-14B 4-bit | 18/20 | 17/20 | 8/8 |
+| vLLM / Qwen3-4B AWQ | 20/20 | 16/20 | 8/8 |
+| vLLM-Omni / Qwen3-4B AWQ | 20/20 | 16/20 | 8/8 |
+
+MLX failures include incomplete tool/resource declarations and an incorrect
+resource slot. CUDA failures include missing definition fields and changed
+punctuation in an exact-copy task. Some are valid ALP proposals that fail the
+scenario; syntactically/semantically invalid protocol outputs are rejected.
+**The requested complete task acceptance has not been achieved.** Smaller-model
+baselines and rejected experiments are retained privately, rather than selecting
+individual passing answers across runs. A larger model or further model-level
+work is needed before claiming all-case task accuracy.
+
+Public GitHub CI passed lint and package build. Its private-dependency unit-test
+job was explicitly skipped; the 145-test result above was run locally with the
+authorized dependency checkouts.
+
 ## Sampling constraints
 
 MLX-Serve 26.9.6 parses more schema constructs than its incremental JSON mask
