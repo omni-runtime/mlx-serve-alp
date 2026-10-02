@@ -10,5 +10,6 @@
   "secret_files": {
     "MLX_ALP_ENGINE_KEY": "/path/to/secrets/engine-key",
     "MLX_ALP_API_KEY": "/path/to/secrets/frontend-key"
-  }
+  },
+  "mask_socket": "/path/to/private/alp-mask.sock"
 }

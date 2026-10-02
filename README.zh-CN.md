@@ -17,7 +17,8 @@ MLX-Serve 是原生二进制，没有 vLLM 的 Python endpoint plugin 接口。
 访问权限或经授权的 wheel；仅克隆此公开仓库无法运行。**
 本仓库不分发依赖源码、协议契约或原始测试包，详见 [依赖说明](docs/dependencies.md)。
 
-需要 Python 3.12+、MLX-Serve 26.9.6，以及对应模型权重。
+需要 Python 3.12+、基于 MLX-Serve 26.9.6 构建的 ALP 严格解码版本，以及模型权重。
+原版二进制不满足要求；按[部署指南](docs/deployment.md)构建并启动 mask worker。
 先安装 `alp-schema-mcp==0.3.0` 和 `vllm-alp==0.2.0` 的 wheel 或源码，
 再运行 `pip install -e '.[test]'`。详细命令见英文 README。
 
@@ -44,9 +45,11 @@ mlx-serve-alp serve --config examples/config.json --host 127.0.0.1 --port 11237
 截断、尾随内容、多动作、目录参数错误等产生 `agent_call.failed`。
 所有结果都保持 `executed=false`、`authorized=false`。
 
-MLX-Serve 的 JSON mask 只支持部分约束。联合分支关联、正则、数值范围等
-在完整输出上再次严格验证，并在 `alp.residual_checks` 报告。
-约束投影不是完整 XGrammar 等价实现，不能保证生成阶段满足全部协议约束。
+原生桥接在每次采样前应用 XGrammar token mask，保留联合分支、动态属性类型和
+位置数组；请求内状态把模型已声明的资源、工具绑定到后续能力。有限工具数组
+去重、知识工具依赖和字符串长度也在生成时约束。桥接断开或 mask 出错会终止生成。
+通用正则、任意对象数组去重等仍由最终校验负责，见 `alp.residual_checks`。
+这不等于任意 JSON Schema 的完整解码实现，详见[严格解码说明](docs/strict-decoding.md)。
 
 服务端目录可配置 `payload_constraints`，指定任务要求的必填字段和固定值，
 只能收窄现有协议与目录。客户端不能直接覆盖约束，详见[任务约束](docs/task-constraints.md)。
@@ -75,3 +78,10 @@ python scripts/run_producer.py --suite /path/to/alp_schema_mcp \
 验证报告和原始证据仅保留在本地，不提交或推送到此仓库。
 参见 [贡献指南](CONTRIBUTING.md)、[安全边界](SECURITY.md)。
 代码采用 [Apache-2.0](LICENSE)；模型和引擎分别遵循其自身许可。
+
+
+可信工具影响级别、环境与资源目录、证据绑定、handler 契约和按名称指定的能力接口，
+均复用 vllm-alp 的共享约束实现。宿主固定值在依赖展开后仍被保留，并在最终校验中
+独立复核。`alp.validation_scope` 报告实际检查范围。描述与执行指令分别使用
+`generation_text_limit`、`generation_instruction_limit` 配置；业务同名字段不受影响。
+参见[严格解码说明](docs/strict-decoding.md)中的迁移与测试边界。

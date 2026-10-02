@@ -64,21 +64,19 @@ def test_complete_json_does_not_override_truncation(config, reason):
 
 def test_schema_projection_resolves_refs_and_reports_limits(config):
     p = profile(config, "tool_call")
-    schema = json.loads(p.grammar)
-    assert schema["type"] == "object" and schema["additionalProperties"] is False
-    assert "$ref" not in p.grammar
-    assert any(c["rule"] == "union_token_mask_relaxed" for c in p.residual_checks)
+    import xgrammar as xgr
+    xgr.Grammar.from_ebnf(p.grammar)
+    assert not any(c["rule"] == "union_token_mask_relaxed" for c in p.residual_checks)
     output, residual = project_schema(
         {"type": "object", "properties": {"x": {"type": "string", "pattern": "x+"}}}
     )
-    assert output["additionalProperties"] is True
+    assert "additionalProperties" not in output  # JSON Schema default remains true.
     assert any(c["rule"] == "pattern" for c in residual)
 
 
 def test_arbitrary_json_uses_explicit_types_for_native_mask():
     projected, _ = project_schema({"type": "object", "properties": {"value": {}}})
-    assert "object" in projected["properties"]["value"]["type"]
-    assert "array" in projected["properties"]["value"]["type"]
+    assert projected["properties"]["value"] == {}
 
 
 def test_union_projection_preserves_valid_branches_and_excludes_unknown_fields():
@@ -109,7 +107,7 @@ def test_union_projection_preserves_valid_branches_and_excludes_unknown_fields()
         jsonschema.validate({"kind": "c"}, projected)
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate({"kind": "b", "unknown": True}, projected)
-    assert any(c["rule"] == "union_token_mask_relaxed" for c in checks)
+    assert not any(c["rule"] == "union_token_mask_relaxed" for c in checks)
 
 
 @pytest.mark.parametrize("mode", ["ok", "length", "trailing", "error", "no_done"])
@@ -118,12 +116,16 @@ async def test_actual_route_lifecycle(config, mode, stream):
     requests = []
 
     async def backend(request):
+        if request.url.path == "/v1/models":
+            return httpx.Response(200, json={"data": [{
+                "id": config.upstream_model, "capabilities": ["chat", "json_schema", "alp_strict_grammar_v1"],
+            }]})
         requests.append(request)
         body = json.loads(request.content)
         assert body["response_format"]["type"] == "json_schema"
-        assert body["response_format"]["json_schema"]["schema"]["properties"]["operation"] == {
-            "enum": ["agent_final"]
-        }
+        envelope = json.loads(body["response_format"]["json_schema"]["schema"]["x-alp-ebnf"])
+        assert envelope["context"]["operations"] == ["agent_final"]
+        assert '::=' in envelope["grammar"]
         assert request.headers["authorization"] == "Bearer engine-test-key"
         assert "tools" not in body
         if mode == "error":
@@ -211,8 +213,7 @@ def test_trusted_constraints_survive_mlx_projection_and_final_validation(config)
     compiled = compiler.compile(
         ALPOptions(allowed_operations=["agent_final"], catalog_ref="demo-text"), catalog
     )
-    wire = json.loads(compiled.grammar)
-    value = wire["properties"]["payload"]["properties"]["output"]["properties"]["value"]
+    value = compiled.body_schemas['agent_final']["properties"]["payload"]["properties"]["output"]["properties"]["value"]
     assert value == {"const": literal}
     good = {**ACTION, "payload": {"output": {"format": "text", "value": literal}}}
     parser = ALPParser(compiled, compiler.contracts, codec="canonical")

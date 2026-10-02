@@ -45,6 +45,7 @@ class MLXServing(ALPServing):
             from vllm_alp.errors import ALPError
 
             raise ALPError("MODEL_NOT_AVAILABLE", "The requested model is not configured.", 404)
+        await self.backend.validate_model()
         return await super().prepare(request, raw_request)
 
     async def events(self, prepared, raw_request=None):
@@ -52,7 +53,7 @@ class MLXServing(ALPServing):
             if event["type"] == "agent_call.completed":
                 event["response"]["alp"].update(
                     raw_format="canonical",
-                    generation_constraint="mlx-serve-json-schema",
+                    generation_constraint="mlx-serve-xgrammar-strict-v1",
                     residual_checks=list(prepared.profile.residual_checks),
                 )
             yield event

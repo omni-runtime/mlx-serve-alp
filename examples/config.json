@@ -52,7 +52,8 @@
               "b"
             ],
             "additionalProperties": false
-          }
+          },
+          "external_effect": "none"
         },
         "text.echo": {
           "input_schema": {
@@ -66,7 +67,8 @@
               "text"
             ],
             "additionalProperties": false
-          }
+          },
+          "external_effect": "read"
         }
       },
       "final_format": "text"

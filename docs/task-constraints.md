@@ -35,8 +35,9 @@ The host must provide legitimate task values; do not derive them from test golde
 answers. Existing catalogs without `payload_constraints` retain their domains.
 
 The compiler incorporates constraints into its cache digest, generation schema,
-prompt and final validation. On MLX, unsupported constraints remain final checks;
-this feature does not upgrade the native engine's grammar implementation.
+structured model context and final validation. On MLX, the strict native bridge
+enforces the compiled grammar. Assertions outside the supported lowering still
+remain final checks.
 No missing output is repaired and no failed generation is silently retried.
 
 Static catalogs remain deployment-scoped. Use the registry's host integration
@@ -53,8 +54,46 @@ by default). The first removes unused schema definitions while preserving field
 descriptions; the second requires an explicit output contract during definition
 sampling without rejecting legacy definitions during final protocol validation.
 
-For vLLM, `definition_field_order` defaults to `contract`. The optional `flexible`
+On both backends, `definition_field_order` defaults to `contract`. The optional `flexible`
 mode adds one late-output/environment ordering, compiling branches separately to
-preserve required and unique object keys. It is not arbitrary key order and does
-not apply to MLX's native mask. Broader sampling choices can reduce model accuracy;
+preserve required and unique object keys. It is not arbitrary key order and applies
+to both XGrammar backends. Broader sampling choices can reduce model accuracy;
 evaluate these policies separately before enabling them in a deployment.
+
+## Request-bound trusted host tasks
+
+Set `task_signing_key_env` in the server config to an environment variable holding
+an independent signing key of at least 32 bytes. Ordinary model/API clients must
+not receive this key. The feature is disabled when the config field is absent.
+The existing endpoint API key still controls access.
+
+The host passes reviewed structured task values to
+`vllm_alp.task_context.task_headers(request, constraints, key=key)`, then sends the
+returned headers with that exact ALP request. The vllm-alp repository's
+`scripts/host_call.py` is an executable client for reviewed request/constraint JSON files. It works with both
+vLLM and MLX adapters. Constraints are never extracted from model text or tests.
+
+The signed context expires after 60 seconds by default (maximum 300), binds the
+complete validated request including model, messages, operation and catalog,
+and can only narrow the deployment catalog. Conflicting fixed values, tampering,
+expired contexts and duplicate headers fail before generation. Identical request
+replay within the lifetime is possible; this token is not an execution idempotency
+key or an authorization grant. The runtime remains responsible for both.
+
+```python
+from vllm_alp.catalog import PayloadConstraints
+from vllm_alp.task_context import task_headers
+
+headers = task_headers(request, {
+    "agent_call": PayloadConstraints(fixed_values={
+        "/input/task": reviewed_task_text,
+    }),
+}, key=host_signing_key)
+# Send request.model_dump() and headers to /v1/alp/chat/completions.
+```
+
+Definition compilation also binds capability tool subsets to visible/fixed tools,
+resource subsets to fixed declared slots, and compiles the `agent_run` read-state
+rule into explicit branches. Inconsistent fixed resource/tool declarations are
+rejected before inference. Unknown runtime relationships still require final
+protocol validation and host authorization.

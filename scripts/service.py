@@ -10,16 +10,21 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("component", choices=["engine", "adapter"])
+    parser.add_argument("component", choices=["engine", "adapter", "mask"])
     parser.add_argument("--settings", type=Path, required=True)
     args = parser.parse_args()
     settings = json.loads(args.settings.read_text())
+    if settings.get("mask_socket"):
+        os.environ["MLX_ALP_MASK_SOCKET"] = settings["mask_socket"]
     for name, path in settings["secret_files"].items():
         value = Path(path).read_text().strip()
         if not value:
             raise ValueError("Empty credential file")
         os.environ[name] = value
-    if args.component == "engine":
+    if args.component == "mask":
+        binary = settings["python"]
+        command = [binary, "-m", "mlx_serve_alp.mask_worker", "--socket", settings["mask_socket"]]
+    elif args.component == "engine":
         binary = settings["engine_binary"]
         command = [
             binary,
