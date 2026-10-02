@@ -101,6 +101,11 @@ vllm-alp: one JSON system message contains the protocol schemas, output codec an
 visible catalog. No handwritten protocol instructions, example answers or extra
 required-field rules are injected. Caller messages are preserved; native sampling
 constraints and full final validation enforce their respective supported rules.
+The shared host SDK also accepts typed `AgentCallTask` and `DefinitionTask` values:
+exact text, session choice and artifact references become signed fixed values,
+and Agent output can reuse one named capability's schema. The optional
+`explicit_session_mode` policy requires a generated choice without forcing either
+mode. `alp.task_constraint_coverage` reports bindings separately from ALP validity.
 Set `compact_prompt: true` to omit
 unreachable schema definitions while preserving descriptions. Set
 `explicit_definition_output: true` to require generated definitions to include

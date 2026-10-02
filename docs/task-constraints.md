@@ -1,5 +1,36 @@
 # Server-owned task constraints
 
+## Typed host task interface
+
+The adapter accepts the shared `vllm_alp.host_tasks` SDK's signed tasks without an
+MLX-specific request format. Construct `AgentCallTask` with `instance_id`, the exact
+`task`, an explicit `session_mode` (`continue` or `isolated`), and authorized
+artifact references. `host_task_headers(request, task, key=...)` binds these fields
+to the existing signed request context. It does not parse natural language or
+grant execution permissions. Its 16 KiB header limit still applies.
+
+`DefinitionTask(capabilities=..., output_from_capability="name")` binds both the
+named capability output and the Agent's JSON output to one supplied schema.
+Unknown references fail before sending; there is no generated-schema repair.
+The vllm-alp repository's `scripts/host_call.py --task task.json` is a client for
+both adapters. It also accepts the original mutually exclusive `--constraints`.
+
+Set catalog `explicit_session_mode: true` to require newly generated calls to
+include their session mode. Both values remain available until a task fixes one.
+This also applies to final completion validation; historical messages keep the
+original protocol defaults. The policy defaults to false.
+
+`alp.task_constraint_coverage` reports fixed/required paths, key field bindings and
+named capability contracts without echoing task values. `required_model_value`
+enforces presence only; `not_task_bound` retains protocol/catalog checks without
+a task-specific binding. Natural-language completeness is `not_evaluated`.
+The native mask, canonical parser and shared host checks enforce the same task.
+
+The shared `compact_task_context` policy defaults to true for host-bound tasks.
+It omits only unreachable schema definitions from model context, keeping fixed
+values and descriptions. Grammar, final checks, user messages and token budgets
+are unchanged. Unbound tasks retain the existing `compact_prompt` policy.
+
 `Catalog.payload_constraints` optionally narrows an operation for a host-defined
 task. It does not infer natural-language requirements. The host supplies the
 requirements and chooses the catalog; caller requests cannot supply this object.

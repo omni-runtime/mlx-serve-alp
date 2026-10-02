@@ -110,6 +110,7 @@ def main():
                 "transport_error": error,
                 "terminal_event": events[-1]["type"] if events else None,
                 "validation_scope": result["alp"].get("validation_scope") if completed else None,
+                "task_constraint_coverage": result["alp"].get("task_constraint_coverage") if completed else None,
             }
             results.append(row)
             print(json.dumps(row, ensure_ascii=False), flush=True)

@@ -85,3 +85,8 @@ python scripts/run_producer.py --suite /path/to/alp_schema_mcp \
 独立复核。`alp.validation_scope` 报告实际检查范围。描述与执行指令分别使用
 `generation_text_limit`、`generation_instruction_limit` 配置；业务同名字段不受影响。
 参见[严格解码说明](docs/strict-decoding.md)中的迁移与测试边界。
+
+结构化宿主调用使用共享的 `AgentCallTask`，固定原文、会话模式和资源引用；
+`DefinitionTask.output_from_capability` 让 Agent 输出与具名能力复用一个接口契约。
+目录可启用 `explicit_session_mode`；`alp.task_constraint_coverage` 报告任务约束覆盖。
+完整 SDK 和签名接入见[任务约束](docs/task-constraints.md)。

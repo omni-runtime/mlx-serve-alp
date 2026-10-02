@@ -20,6 +20,46 @@ ACTION = {
 }
 
 
+@pytest.mark.parametrize("mutation,expected", [(None, 200), ("punctuation", 502), ("session", 502)])
+async def test_typed_host_task_reaches_native_mask_and_final_validator(config, monkeypatch, mutation, expected):
+    from vllm_alp.host_tasks import AgentCallTask, host_task_headers
+    from vllm_alp.protocol import ALPChatRequest
+
+    key = b"mlx-host-task-test-signing-key-32bytes"
+    config.task_signing_key_env = "MLX_TEST_HOST_KEY"
+    monkeypatch.setenv(config.task_signing_key_env, key.decode())
+    catalog = config.catalogs["demo-text"]
+    name = next(iter(catalog.agents))
+    task = AgentCallTask(instance_id=name, task='中文。\n原样“引号”', session_mode="isolated")
+    body = ALPChatRequest(model=config.model, messages=[{"role": "user", "content": "Call this agent"}],
+                         alp={"allowed_operations": ["agent_call"], "catalog_ref": "demo-text"})
+    payload = task.payload()
+    if mutation == "punctuation":
+        payload["input"]["task"] = payload["input"]["task"].replace("。", ".")
+    if mutation == "session":
+        del payload["session_mode"]
+
+    async def respond(request):
+        if request.url.path == "/v1/models":
+            return httpx.Response(200, json={"data": [{"id": config.upstream_model,
+                "capabilities": ["chat", "json_schema", "alp_strict_grammar_v1"]}]})
+        wire = json.loads(request.content)
+        context = json.loads(wire["response_format"]["json_schema"]["schema"]["x-alp-ebnf"])["context"]
+        assert context["catalog"]["payload_constraints"]["agent_call"]["fixed_values"]["/input/task"] == task.task
+        raw = json.dumps({"protocol_version": "0.3.0", "request_id": "host_mlx", "operation": "agent_call", "payload": payload})
+        event = {"choices": [{"index": 0, "delta": {"content": raw}, "finish_reason": "stop"}]}
+        return httpx.Response(200, text="data: " + json.dumps(event) + "\n\ndata: [DONE]\n\n")
+
+    app = create_app(config, transport=httpx.MockTransport(respond))
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url="http://test") as client:
+            response = await client.post("/v1/alp/chat/completions", json=body.model_dump(),
+                headers={"Authorization": "Bearer frontend-test-key", **host_task_headers(body, task, key=key)})
+    assert response.status_code == expected, response.text
+    if expected == 200:
+        assert response.json()["alp"]["task_constraint_coverage"]["key_fields"]["/session_mode"] == "fixed"
+
+
 @pytest.fixture
 def config(monkeypatch):
     monkeypatch.setenv("MLX_ALP_API_KEY", "frontend-test-key")
