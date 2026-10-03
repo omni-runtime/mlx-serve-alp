@@ -106,6 +106,9 @@ exact text, session choice and artifact references become signed fixed values,
 and Agent output can reuse one named capability's schema. The optional
 `explicit_session_mode` policy requires a generated choice without forcing either
 mode. `alp.task_constraint_coverage` reports bindings separately from ALP validity.
+Definitions can also bind `environment_profile_ref`, `requested_tools` and
+`output` without declaring named capabilities. Use either a direct `output` or
+`output_from_capability` from the shared SDK; conflicting sources are rejected.
 Set `compact_prompt: true` to omit
 unreachable schema definitions while preserving descriptions. Set
 `explicit_definition_output: true` to require generated definitions to include
