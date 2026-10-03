@@ -4,3 +4,4 @@ include docs/deployment.md docs/dependencies.md docs/task-constraints.md docs/st
 recursive-include scripts *.py
 recursive-include tests *.py
 recursive-include native *.c *.zig
+include contracts.lock.json docs/protocol-04.md

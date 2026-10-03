@@ -1,8 +1,10 @@
 # mlx-serve-alp
 
+Supports ALP 0.3 (default) and opt-in 0.4 response collections. See [protocol versions and result pairing](docs/protocol-04.md).
+
 [简体中文](README.zh-CN.md)
 
-Serve validated Agent Lifecycle Protocol (ALP) 0.3.0 actions with native
+Serve validated Agent Lifecycle Protocol (ALP) 0.3/0.4 actions with native
 [MLX-Serve](https://github.com/ddalcu/mlx-serve) on Apple Silicon.
 
 This package exposes `POST /v1/alp/chat/completions`, compiles deployment catalogs

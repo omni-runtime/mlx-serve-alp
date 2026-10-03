@@ -47,14 +47,14 @@ class ALPServing:
         catalog = await self.registry.resolve(request.alp.catalog_ref, raw_request)
         catalog = bind_task_constraints(request, catalog, self.registry.config, raw_request)
         profile = await asyncio.to_thread(self.compiler.compile, request.alp, catalog)
-        messages = self.renderer(request, profile, self.compiler.contracts)
+        messages = self.renderer(request, profile, profile.contracts)
         return PreparedRequest(
             request, profile, messages, "alpchat_" + uuid.uuid4().hex, "ac_" + uuid.uuid4().hex
         )
 
     async def events(self, prepared: PreparedRequest, raw_request=None):
         """A candidate becomes an accepted call only after the entire native stream."""
-        parser = self.parser_factory(prepared.profile, self.compiler.contracts)
+        parser = self.parser_factory(prepared.profile, prepared.profile.contracts)
         yield {
             "type": "agent_call.started",
             "id": prepared.response_id,
@@ -96,7 +96,9 @@ class ALPServing:
                 if chunk.usage is not None:
                     usage = chunk.usage
             canonical = parser.finish(finish_reason)
+            actions = canonical if isinstance(canonical, list) else [canonical]
             from .host_contracts import task_constraint_coverage, validation_scope
+            from .response_constraints import member_catalog, response_coverage
 
             response = ALPChatResponse(
                 id=prepared.response_id,
@@ -105,20 +107,24 @@ class ALPServing:
                 choices=[
                     Choice(
                         message=AssistantMessage(
-                            agent_calls=[AgentCall(id=prepared.call_id, request=canonical)]
+                            agent_calls=[AgentCall(id=prepared.call_id if i == 0 else "ac_" + uuid.uuid4().hex, request=value)
+                                         for i, value in enumerate(actions)]
                         )
                     )
                 ],
                 usage=usage,
                 alp={
-                    "protocol_version": "0.3.0",
+                    "protocol_version": prepared.profile.protocol_version,
                     "constraint_digest": prepared.profile.digest,
                     "validated": True,
+                    "response_constraint_coverage": response_coverage(prepared.profile.catalog),
                     "executed": False,
                     "authorized": False,
                     "residual_check_count": len(prepared.profile.residual_checks),
-                    "validation_scope": validation_scope(canonical, prepared.profile.catalog),
-                    "task_constraint_coverage": task_constraint_coverage(
+                    "validation_scope": [validation_scope(value, member_catalog(prepared.profile.catalog, i)) for i, value in enumerate(actions)]
+                    if isinstance(canonical, list) else validation_scope(canonical, prepared.profile.catalog),
+                    "task_constraint_coverage": [task_constraint_coverage(value, member_catalog(prepared.profile.catalog, i)) for i, value in enumerate(actions)]
+                    if isinstance(canonical, list) else task_constraint_coverage(
                         canonical, prepared.profile.catalog,
                     ),
                 },
@@ -129,7 +135,10 @@ class ALPServing:
                 "call_id": prepared.call_id,
                 "response": response.model_dump(exclude_none=True),
             }
-        except ALPError:
+        except ALPError as exc:
+            if exc.code == "INCOMPLETE_GENERATION" and usage:
+                exc.details.append({"completion_tokens": usage.get("completion_tokens"),
+                                    "requested_max_tokens": prepared.request.max_tokens})
             raise
         except asyncio.CancelledError:
             raise

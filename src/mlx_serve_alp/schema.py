@@ -1,10 +1,9 @@
 """Compile full canonical ALP grammars for the native strict-mask bridge."""
 from __future__ import annotations
 
-import copy
 import hashlib
 
-from mlx_serve_alp.schema_tools import generation_schemas
+from mlx_serve_alp.schema_tools import generation_views
 from mlx_serve_alp.strict_grammar import strict_json_grammar
 
 from .constraints import CompiledProfile, ContractCompiler
@@ -22,29 +21,28 @@ def project_schema(root: dict) -> tuple[dict, list[dict]]:
 
 class MLXConstraintCompiler(ContractCompiler):
     # Keep compiled-profile identities stable across the dependency split.
-    compiler_identity = "vllm-alp-0.2/strict-generation-3/xgrammar-0.2.8"
+    compiler_identity = "vllm-alp-0.2/strict-generation-4/xgrammar-0.2.8"
 
     def _compile(self, digest, operations, catalog):
         import xgrammar as xgr
 
+        if self.contracts.version == "0.4.0":
+            from .response_grammar import response_grammar
+            schemas = {op: self._specialize(op, catalog) for op in operations}
+            grammar, residual = response_grammar(self, operations, catalog, schemas, codec="canonical")
+            return CompiledProfile(digest, operations, schemas, grammar, residual,
+                                   catalog.model_copy(deep=True), self.contracts.version)
         schemas, elements, residual = {}, [], []
         for operation in operations:
             schema = self._specialize(operation, catalog)
             schemas[operation] = schema
-            for variant in generation_schemas(
-                schema, operation, flexible=catalog.definition_field_order == "flexible",
+            for variant in generation_views(
+                schema, operation, codec="canonical", flexible=catalog.definition_field_order == "flexible",
                 explicit_output=catalog.explicit_definition_output,
                 text_limit=catalog.generation_text_limit,
                 instruction_limit=catalog.generation_instruction_limit,
             ):
-                canonical = copy.deepcopy(variant)
-                props = canonical["properties"]
-                canonical["properties"] = {
-                    "protocol_version": props["protocol_version"],
-                    "request_id": props["request_id"],
-                    "operation": {"const": operation}, "payload": props["payload"],
-                }
-                canonical["required"] = list(canonical["properties"])
+                canonical = variant
                 lowered, checks = project_schema(canonical)
                 elements.append({"type": "grammar", "grammar": strict_json_grammar(lowered)})
                 residual.extend({**c, "path": "/" + operation + c["path"]} for c in checks)

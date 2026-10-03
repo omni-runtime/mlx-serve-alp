@@ -40,6 +40,7 @@ _SCALARS = {
     "x-alp-together",
     "x-alp-required-items",
     "x-alp-any-items",
+    "x-alp-prefix-unique",
 }
 _RESIDUAL = {
     "uniqueItems",

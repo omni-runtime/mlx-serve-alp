@@ -8,7 +8,7 @@ The adapter does not require vllm-alp or a separately installed alp-core.
 
 ```bash
 git clone https://github.com/omni-runtime/alp_schema_mcp.git /path/to/alp_schema_mcp
-git -C /path/to/alp_schema_mcp checkout c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8
+git -C /path/to/alp_schema_mcp checkout 459257275b29865d3f60facb67283c8bfab1262e
 python -m pip install /path/to/alp_schema_mcp
 python -m pip install -e '.[test]'
 ```

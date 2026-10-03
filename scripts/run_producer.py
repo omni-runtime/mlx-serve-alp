@@ -1,4 +1,5 @@
-"""Run original producer tasks through a real ALP endpoint; no answer repair or retry."""
+#!/usr/bin/env python3
+"""Run an authorized producer suite without retries, output repair or action execution."""
 
 from __future__ import annotations
 
@@ -13,130 +14,173 @@ import httpx
 from alp_schema_mcp.catalog import ContractCatalog
 
 
+def operations_from_task(case):
+    # Published task inputs, never golden files or expected outputs.
+    marker = "本轮的业务约束："
+    if marker in case["context"]:
+        business = json.JSONDecoder().raw_decode(case["context"].split(marker, 1)[1].lstrip())[0]
+        return list(dict.fromkeys(item["operation"] for item in business))
+    ops = {
+        **dict.fromkeys(range(1, 5), "agent_definition_generate"),
+        5: "list_agent_capabilities",
+        **dict.fromkeys([6, 7, 8, 18, 19], "agent_call"),
+        9: "agent_capability_call",
+        10: "agent_capability_call",
+        **dict.fromkeys([11, 12, 13, 14, 20], "tool_call"),
+        **dict.fromkeys([15, 16, 17], "agent_final"),
+    }
+    number = int(case["id"][1:])
+    if number not in ops:
+        raise ValueError("Supply --case-config operations for this new task")
+    return [ops[number]]
+
+
 def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--suite", type=Path, required=True)
-    p.add_argument("--base-url", required=True)
-    p.add_argument("--model", required=True)
-    p.add_argument("--codec", choices=["tagged", "canonical"], required=True)
-    p.add_argument("--output", type=Path, required=True)
-    p.add_argument("--case", action="append")
-    p.add_argument("--max-tokens", type=int, default=4096)
-    args = p.parse_args()
-    spec = importlib.util.spec_from_file_location(
-        "producer", args.suite / "examples/check_producer.py"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--suite", type=Path, required=True)
+    parser.add_argument("--base-url", required=True)
+    parser.add_argument("--model", required=True)
+    parser.add_argument(
+        "--codec", choices=["tagged", "canonical", "provider_native"], default="canonical"
     )
+    parser.add_argument("--protocol-version", choices=["0.3.0", "0.4.0"], default="0.3.0")
+    parser.add_argument("--api-key-env", default="ALP_API_KEY")
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--case-config",
+        type=Path,
+        help="Operator JSON mapping case IDs to catalog_ref and operations",
+    )
+    parser.add_argument("--case", action="append")
+    parser.add_argument("--max-tokens", type=int, default=3072)
+    parser.add_argument("--timeout", type=int, default=600)
+    args = parser.parse_args()
+    args.output.mkdir(parents=True, exist_ok=False)
+    version04 = args.protocol_version == "0.4.0"
+    checker_path = (
+        args.suite / "examples" / ("check_producer_v04.py" if version04 else "check_producer.py")
+    )
+    spec = importlib.util.spec_from_file_location("alp_producer_checker", checker_path)
     checker = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(checker)
-    contracts = ContractCatalog()
+    contracts = ContractCatalog(args.protocol_version)
     suite = checker.load_suite(contracts)
-    args.output.mkdir(parents=True, exist_ok=True)
-    if (args.output / "report.json").exists():
-        p.error("Use a new output directory to preserve previous evidence")
+    settings = json.loads(args.case_config.read_text()) if args.case_config else {}
     results = []
-    headers = {"Authorization": "Bearer " + os.environ["ALP_API_KEY"]}
     with httpx.Client(
-        base_url=args.base_url, headers=headers, timeout=600, trust_env=False
+        base_url=args.base_url,
+        timeout=args.timeout,
+        trust_env=False,
+        headers={"Authorization": "Bearer " + os.environ[args.api_key_env]},
     ) as client:
         for case in suite["positive"]:
             if args.case and case["id"] not in args.case:
                 continue
-            operation = next(a["equals"] for a in case["assertions"] if a["path"] == "/operation")
-            prompt = (
-                suite["producer_instructions"] + "\n" + suite["format_instructions"][args.codec]
-            )
+            config = settings.get(case["id"], {})
+            operations = config.get("operations") or operations_from_task(case)
+            prompt = suite["producer_instructions"]
+            if args.codec != "provider_native":
+                prompt += "\n" + suite["format_instructions"][args.codec]
             prompt += "\nContext:\n" + case["context"] + "\nTask:\n" + case["prompt"]
             body = {
                 "model": args.model,
                 "messages": [{"role": "user", "content": prompt}],
                 "alp": {
-                    "allowed_operations": [operation],
-                    "choice": {"operation": operation},
-                    "catalog_ref": "conformance-json"
-                    if case["id"] == "P16"
-                    else "conformance-text",
+                    "protocol_version": args.protocol_version,
+                    "allowed_operations": operations,
+                    "choice": "required",
+                    "catalog_ref": config.get(
+                        "catalog_ref",
+                        "conformance-json" if int(case["id"][1:]) == 16 else "conformance-text",
+                    ),
                 },
                 "stream": True,
                 "include_raw": True,
+                "max_tokens": args.max_tokens,
                 "temperature": 0.0,
                 "seed": 42,
-                "max_tokens": args.max_tokens,
             }
-            start = time.monotonic()
-            raw, events, error = "", [], None
+            started = time.monotonic()
+            events, response, raw = [], None, ""
             try:
-                with client.stream("POST", "/v1/alp/chat/completions", json=body) as response:
-                    status = response.status_code
-                    if status != 200:
-                        error = response.read().decode()
+                upstream = client.post("/v1/alp/chat/completions", json=body)
+                status, wire = upstream.status_code, upstream.text
+                if status == 200:
+                    if wire.lstrip().startswith("{"):
+                        response = json.loads(wire)
                     else:
-                        for line in response.iter_lines():
-                            if not line.startswith("data: "):
-                                continue
-                            event = json.loads(line[6:])
-                            events.append(event)
-                            if event["type"] == "agent_call.arguments.delta":
-                                raw += event["delta"]
-            except httpx.HTTPError as exc:
-                status, error = 0, type(exc).__name__
-            filename = case["id"] + (
-                ".canonical.json" if args.codec == "canonical" else ".tagged.txt"
-            )
-            (args.output / filename).write_text(raw)
-            (args.output / (case["id"] + ".request.json")).write_text(
-                json.dumps(body, ensure_ascii=False, indent=2)
-            )
-            (args.output / (case["id"] + ".events.json")).write_text(
-                json.dumps(events, ensure_ascii=False, indent=2)
-            )
-            checked = checker.check_output(raw, args.codec, contracts, case)
-            checked.pop("canonical")
-            completed = bool(events and events[-1]["type"] == "agent_call.completed")
-            if completed:
-                result = events[-1]["response"]
-                completed = (
-                    result.get("raw") == raw
-                    and result["alp"]["validated"] is True
-                    and result["alp"]["executed"] is False
-                    and result["alp"]["authorized"] is False
+                        for line in wire.splitlines():
+                            if line.startswith("data: ") and line[6:] != "[DONE]":
+                                event = json.loads(line[6:])
+                                events.append(event)
+                                if event.get("type") == "agent_call.arguments.delta":
+                                    raw += event["delta"]
+                                if event.get("type") == "agent_call.completed":
+                                    response = event["response"]
+                error = None if response else (events[-1] if events else json.loads(wire))
+            except (httpx.HTTPError, ValueError, KeyError) as exc:
+                status, wire, error = 0, "", {"exception": type(exc).__name__}
+            accepted = bool(response and response.get("alp", {}).get("validated") is True)
+            scored = None
+            if accepted:
+                actions = [
+                    call["request"] for call in response["choices"][0]["message"]["agent_calls"]
+                ]
+                document = json.dumps(actions if version04 else actions[0], ensure_ascii=False)
+                scored = checker.check_output(document, "canonical", contracts, case)
+                scored.pop("requests" if version04 else "canonical", None)
+            elif raw and args.codec != "provider_native":
+                scored = checker.check_output(
+                    raw,
+                    args.codec,
+                    contracts,
+                    case,
+                    **({"termination": "truncated"} if version04 else {}),
                 )
+                scored.pop("requests" if version04 else "canonical", None)
             row = {
                 "id": case["id"],
-                **checked,
-                "accepted": completed,
                 "http_status": status,
-                "passed": checked["passed"] and completed,
-                "seconds": round(time.monotonic() - start, 3),
-                "transport_error": error,
-                "terminal_event": events[-1]["type"] if events else None,
-                "validation_scope": result["alp"].get("validation_scope") if completed else None,
-                "task_constraint_coverage": result["alp"].get("task_constraint_coverage") if completed else None,
+                "seconds": round(time.monotonic() - started, 3),
+                "accepted": accepted,
+                "passed": accepted and bool(scored and scored["passed"]),
+                "score": scored,
+                "error": error,
             }
+            (args.output / (case["id"] + ".json")).write_text(
+                json.dumps(
+                    {"request": body, "wire": wire, "result": row}, ensure_ascii=False, indent=2
+                )
+            )
             results.append(row)
-            print(json.dumps(row, ensure_ascii=False), flush=True)
             report = {
-                "mode": "real_model_output",
+                "protocol_version": args.protocol_version,
                 "model": args.model,
-                "codec": args.codec,
-                "retry_count": 0,
-                "max_tokens": args.max_tokens,
-                "temperature": 0.0,
-                "seed": 42,
-                "operation_selection": "explicit per task; no golden answers in prompts",
-                "contract_sha256": suite["contract_sha256"],
-                "passed": sum(r["passed"] for r in results),
                 "total": len(results),
-                "failed": sum(not r["passed"] for r in results),
-                "results": results,
-                "runtime_execution": "not_run",
+                "accepted": sum(r["accepted"] for r in results),
+                "passed": sum(r["passed"] for r in results),
+                "retry_count": 0,
                 "executed": False,
                 "authorized": False,
+                "results": results,
             }
             (args.output / "report.json").write_text(
                 json.dumps(report, ensure_ascii=False, indent=2)
             )
-    return int(any(not r["passed"] for r in results))
+            print(
+                json.dumps(
+                    {
+                        "case": case["id"],
+                        "accepted": accepted,
+                        "passed": row["passed"],
+                        "seconds": row["seconds"],
+                        "completed": len(results),
+                    },
+                    ensure_ascii=False,
+                ),
+                flush=True,
+            )
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

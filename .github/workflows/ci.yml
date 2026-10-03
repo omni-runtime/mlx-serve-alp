@@ -21,10 +21,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - id: dependency
+        run: |
+          python - <<'PYTHON'
+          import json, os
+          revision = json.load(open('contracts.lock.json'))['contracts']['commit']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('revision=' + revision + '\n')
+          PYTHON
       - uses: actions/checkout@v4
         with:
           repository: omni-runtime/alp_schema_mcp
-          ref: c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8
+          ref: ${{ steps.dependency.outputs.revision }}
           token: ${{ secrets.PRIVATE_DEPENDENCIES_TOKEN }}
           path: .deps/alp_schema_mcp
           persist-credentials: false

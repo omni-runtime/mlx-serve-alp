@@ -3,7 +3,8 @@
 [English](README.md)
 
 为 Apple Silicon 上的原生 [MLX-Serve](https://github.com/ddalcu/mlx-serve)
-增加 ALP 0.3.0 动作生成接口：`POST /v1/alp/chat/completions`。
+增加 ALP 动作生成接口：`POST /v1/alp/chat/completions`。
+默认使用 0.3，显式设置 `alp.protocol_version: "0.4.0"` 可启用整轮多调用，详见[版本与结果配对](docs/protocol-04.md)。
 六个操作的权威协议契约与校验来自 `alp-schema-mcp`；目录特化、任务绑定、
 生成约束和接口生命周期由本插件内部维护，无需 vllm-alp 或独立的 alp-core。
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Add opt-in ALP 0.4 response collections with atomic validation and paired terminal results.
+- Keep 0.3 as the default; isolate catalogs and private replay by protocol version.
+- Enforce reserved resource management, exclusive actions and per-response IDs.
+- Update the producer runner for the latest 0.3/0.4 suites and pin the authorized contract revision.
+- Preserve native and protocol token-mask intersection, whole-response termination, and definition dependency constraints.
+- Add configurable semantic rendering and trusted state-effect preconditions without inferring task answers.
+
 ## 0.2.2
 
 - Maintain catalog, task binding, grammar, endpoint and stream helpers inside the MLX plugin.

@@ -76,6 +76,9 @@ def strict_json_grammar(schema):
         if values is None:
             return False
         # Bound compilation cost explicitly instead of silently weakening it.
+        if len(values) > 12 and node.get('x-alp-prefix-unique'):
+            node.pop('uniqueItems', None)
+            return False
         if len(values) > 12:
             raise ALPError('UNSUPPORTED_SCHEMA', 'Strict unique arrays support at most 12 candidate values.', 422)
         if not values:
@@ -121,7 +124,7 @@ def strict_json_grammar(schema):
             return
         for child in list(schema_children(node)):
             walk(child)
-        for key in ('x-alp-together', 'x-alp-required-items', 'x-alp-any-items'):
+        for key in ('x-alp-together', 'x-alp-required-items', 'x-alp-any-items', 'x-alp-prefix-unique'):
             node.pop(key, None)
 
     walk(source)

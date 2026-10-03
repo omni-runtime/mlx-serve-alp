@@ -23,7 +23,7 @@ class OperationChoice(StrictModel):
 
 
 class ALPOptions(StrictModel):
-    protocol_version: Literal["0.3.0"] = "0.3.0"
+    protocol_version: Literal["0.3.0", "0.4.0"] = "0.3.0"
     allowed_operations: list[Operation] = Field(min_length=1, max_length=6)
     choice: Literal["required"] | OperationChoice = "required"
     strict: Literal[True] = True
@@ -48,7 +48,7 @@ class AgentCall(StrictModel):
 class Message(StrictModel):
     role: Literal["system", "developer", "user", "assistant", "tool"]
     content: str | list[dict[str, Any]] | None = None
-    agent_calls: list[AgentCall] | None = Field(default=None, min_length=1, max_length=1)
+    agent_calls: list[AgentCall] | None = Field(default=None, min_length=1, max_length=16)
     name: str | None = None
     tool_call_id: str | None = None
 
@@ -77,10 +77,21 @@ class ALPChatRequest(StrictModel):
     include_raw: bool = False
 
 
+    @model_validator(mode="after")
+    def check_history_version(self):
+        for message in self.messages:
+            if message.agent_calls:
+                if self.alp.protocol_version == "0.3.0" and len(message.agent_calls) != 1:
+                    raise ValueError("ALP 0.3 requires exactly one call per turn")
+                if len({call.id for call in message.agent_calls}) != len(message.agent_calls):
+                    raise ValueError("Assistant call IDs must be unique")
+        return self
+
+
 class AssistantMessage(StrictModel):
     role: Literal["assistant"] = "assistant"
     content: None = None
-    agent_calls: list[AgentCall] = Field(min_length=1, max_length=1)
+    agent_calls: list[AgentCall] = Field(min_length=1, max_length=16)
 
 
 class Choice(StrictModel):

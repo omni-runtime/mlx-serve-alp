@@ -1,0 +1,13 @@
+{
+  "contracts": {
+    "repository": "https://github.com/omni-runtime/alp_schema_mcp.git",
+    "commit": "459257275b29865d3f60facb67283c8bfab1262e",
+    "package_version": "0.3.0",
+    "protocol_version": "0.3.0",
+    "supported_protocol_versions": [
+      "0.3.0",
+      "0.4.0"
+    ],
+    "draft_revision": 1
+  }
+}
