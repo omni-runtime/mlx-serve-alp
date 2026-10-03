@@ -10,12 +10,13 @@ import httpx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import Field, model_validator
-from vllm_alp.catalog import CatalogRegistry, ServerConfig
-from vllm_alp.parser import ALPParser
-from vllm_alp.serving import ALPServing
-from vllm_alp.vllm_endpoint import ALPEndpointPlugin
+
+from mlx_serve_alp.catalog import CatalogRegistry, ServerConfig
+from mlx_serve_alp.parser import ALPParser
+from mlx_serve_alp.serving import ALPServing
 
 from .backend import MLXBackend, render_messages
+from .endpoint import attach_alp_route
 from .schema import MLXConstraintCompiler
 
 
@@ -42,7 +43,7 @@ class MLXConfig(ServerConfig):
 class MLXServing(ALPServing):
     async def prepare(self, request, raw_request=None):
         if request.model != self.backend.config.model:
-            from vllm_alp.errors import ALPError
+            from mlx_serve_alp.errors import ALPError
 
             raise ALPError("MODEL_NOT_AVAILABLE", "The requested model is not configured.", 404)
         await self.backend.validate_model()
@@ -88,7 +89,7 @@ def create_app(config: MLXConfig, *, transport=None):
         yield
         await client.aclose()
 
-    app = FastAPI(title="MLX-Serve ALP", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="MLX-Serve ALP", version="0.2.2", lifespan=lifespan)
     gate = asyncio.Semaphore(config.max_concurrent)
 
     # Pure ASGI wrapper keeps the semaphore held until the full stream closes.
@@ -108,11 +109,7 @@ def create_app(config: MLXConfig, *, transport=None):
 
     app.add_middleware(Authentication)
 
-    class Endpoint(ALPEndpointPlugin):
-        async def _service(self, state):
-            return service
-
-    Endpoint(config=config).attach_router(app)
+    attach_alp_route(app, service)
 
     @app.get("/health")
     async def health():

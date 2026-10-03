@@ -4,11 +4,11 @@ from pathlib import Path
 import httpx
 import pytest
 from alp_schema_mcp.catalog import ContractCatalog
-from vllm_alp.errors import ALPError
-from vllm_alp.parser import ALPParser
-from vllm_alp.protocol import ALPOptions
 
 from mlx_serve_alp.app import MLXConfig, create_app
+from mlx_serve_alp.errors import ALPError
+from mlx_serve_alp.parser import ALPParser
+from mlx_serve_alp.protocol import ALPOptions
 from mlx_serve_alp.schema import MLXConstraintCompiler, project_schema
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,8 +22,8 @@ ACTION = {
 
 @pytest.mark.parametrize("mutation,expected", [(None, 200), ("punctuation", 502), ("session", 502)])
 async def test_typed_host_task_reaches_native_mask_and_final_validator(config, monkeypatch, mutation, expected):
-    from vllm_alp.host_tasks import AgentCallTask, host_task_headers
-    from vllm_alp.protocol import ALPChatRequest
+    from mlx_serve_alp.host_tasks import AgentCallTask, host_task_headers
+    from mlx_serve_alp.protocol import ALPChatRequest
 
     key = b"mlx-host-task-test-signing-key-32bytes"
     config.task_signing_key_env = "MLX_TEST_HOST_KEY"
@@ -242,7 +242,7 @@ def test_config_rejects_remote_or_credential_urls(config, url):
 
 
 def test_trusted_constraints_survive_mlx_projection_and_final_validation(config):
-    from vllm_alp.catalog import PayloadConstraints
+    from mlx_serve_alp.catalog import PayloadConstraints
 
     catalog = config.catalogs["demo-text"].model_copy(deep=True)
     literal = "Exact Unicode text。"

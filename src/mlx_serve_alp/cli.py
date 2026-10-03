@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 
-from vllm_alp.errors import ALPError
-from vllm_alp.protocol import ALPOptions
+from mlx_serve_alp.errors import ALPError
+from mlx_serve_alp.protocol import ALPOptions
 
 from .app import MLXConfig, create_app
 from .schema import MLXConstraintCompiler

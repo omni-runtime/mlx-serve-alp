@@ -16,7 +16,8 @@ from pathlib import Path
 
 import numpy as np
 import xgrammar as xgr
-from vllm_alp.decoding_state import StatefulMatcher
+
+from mlx_serve_alp.decoding_state import StatefulMatcher
 
 MAX_VOCAB = 300_000
 MAX_GRAMMAR = 8 * 1024 * 1024

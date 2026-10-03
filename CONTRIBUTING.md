@@ -1,6 +1,6 @@
 # Contributing
 
-Use Python 3.12 or newer. Install the protocol and vllm-alp versions in
+Use Python 3.12 or newer. Install the protocol version in
 `pyproject.toml`, then `pip install -e '.[test]'`.
 
 Run `pytest -q`, `ruff check src tests scripts`, and `python -m build` before

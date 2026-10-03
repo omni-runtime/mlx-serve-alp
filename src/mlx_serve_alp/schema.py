@@ -4,9 +4,11 @@ from __future__ import annotations
 import copy
 import hashlib
 
-from vllm_alp.constraints import ALPConstraintCompiler, CompiledProfile, lower_schema
-from vllm_alp.schema_tools import generation_schemas
-from vllm_alp.strict_grammar import strict_json_grammar
+from mlx_serve_alp.schema_tools import generation_schemas
+from mlx_serve_alp.strict_grammar import strict_json_grammar
+
+from .constraints import CompiledProfile, ContractCompiler
+from .schema_lowering import lower_schema
 
 
 def project_schema(root: dict) -> tuple[dict, list[dict]]:
@@ -18,7 +20,10 @@ def project_schema(root: dict) -> tuple[dict, list[dict]]:
     return lower_schema(root)
 
 
-class MLXConstraintCompiler(ALPConstraintCompiler):
+class MLXConstraintCompiler(ContractCompiler):
+    # Keep compiled-profile identities stable across the dependency split.
+    compiler_identity = "vllm-alp-0.2/strict-generation-3/xgrammar-0.2.8"
+
     def _compile(self, digest, operations, catalog):
         import xgrammar as xgr
 

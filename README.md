@@ -7,9 +7,8 @@ Serve validated Agent Lifecycle Protocol (ALP) 0.3.0 actions with native
 
 This package exposes `POST /v1/alp/chat/completions`, compiles deployment catalogs
 into server-controlled JSON Schema, and returns one validated `message.agent_calls`
-entry. It shares protocol compilation, request validation and completion lifecycle
-with [vllm-alp](https://github.com/omni-runtime/vllm-alp); the authoritative protocol
-comes from `alp-schema-mcp==0.3.0`. No tools or agents are executed.
+entry. Its own helpers perform catalog specialization, request validation and completion
+lifecycle management; the authoritative protocol comes from `alp-schema-mcp==0.3.0`. No tools or agents are executed.
 
 Native MLX-Serve is a Zig binary without vLLM's Python endpoint-plugin interface.
 This adapter uses its authenticated loopback HTTP interface. The inference engine
@@ -20,17 +19,16 @@ remains MLX-Serve; this package does not load model weights or select backends.
 Requires Python 3.12+, the **26.9.6 ALP strict-mask build** of MLX-Serve,
 and a supported text-generation model. Build the native bridge using
 [the deployment guide](docs/deployment.md); the stock binary is not sufficient.
-**The two runtime dependencies, `alp_schema_mcp` and `vllm-alp`, are private
-repositories. Obtain access or authorized wheels from their maintainers first.**
-This public repository does not redistribute their code, contracts or test suite.
+**The protocol dependency `alp_schema_mcp` is private. Obtain access or an
+authorized wheel from its maintainers first.** This public repository does not
+redistribute its protocol definitions or original test suite.
 A public clone alone is therefore not sufficient to run the adapter.
 See [dependency access](docs/dependencies.md).
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install /path/to/alp_schema_mcp-0.3.1-py3-none-any.whl
-python -m pip install /path/to/vllm_alp-0.2.1-py3-none-any.whl
+python -m pip install /path/to/alp_schema_mcp-0.3.0-py3-none-any.whl
 python -m pip install -e '.[test]'
 mlx-serve-alp check --config examples/config.json
 ```
@@ -96,19 +94,18 @@ remain separate concerns. See [strict decoding](docs/strict-decoding.md).
 Catalogs may include server-owned `payload_constraints` for required payload
 fields and fixed task values. They narrow the existing contract and remain subject
 to full final validation. Clients select a catalog; they cannot submit constraints.
-See [task constraints](docs/task-constraints.md). Context rendering is shared with
-vllm-alp: one JSON system message contains the protocol schemas, output codec and
+See [task constraints](docs/task-constraints.md). The local context renderer emits one JSON system message containing the protocol schemas, output codec and
 visible catalog. No handwritten protocol instructions, example answers or extra
 required-field rules are injected. Caller messages are preserved; native sampling
 constraints and full final validation enforce their respective supported rules.
-The shared host SDK also accepts typed `AgentCallTask` and `DefinitionTask` values:
+The plugin-local host SDK also accepts typed `AgentCallTask` and `DefinitionTask` values:
 exact text, session choice and artifact references become signed fixed values,
 and Agent output can reuse one named capability's schema. The optional
 `explicit_session_mode` policy requires a generated choice without forcing either
 mode. `alp.task_constraint_coverage` reports bindings separately from ALP validity.
 Definitions can also bind `environment_profile_ref`, `requested_tools` and
 `output` without declaring named capabilities. Use either a direct `output` or
-`output_from_capability` from the shared SDK; conflicting sources are rejected.
+`output_from_capability` from the local SDK; conflicting sources are rejected.
 Set `compact_prompt: true` to omit
 unreachable schema definitions while preserving descriptions. Set
 `explicit_definition_output: true` to require generated definitions to include
@@ -146,9 +143,10 @@ audio, image or embedding capabilities are not ALP text generators, even when
 engine health is good. Servers without the strict capability marker are rejected before inference.
 The ALP strict path skips MLX-Serve's generic JSON-schema prompt injection.
 
-## Shared runtime ownership
+## Dependency ownership
 
-Engine-independent contracts and task binding now live in `alp_schema_mcp.runtime`
-(package 0.3.1; ALP remains 0.3.0). Existing `vllm_alp` common imports remain
-compatibility aliases. Cloud Function Calling belongs to
-[semantic-router-alp](https://github.com/omni-runtime/semantic-router-alp).
+This plugin includes its own catalog, host-task, validation, grammar, stream and
+endpoint helpers. It requires neither vllm-alp nor a separate alp-core package.
+The canonical schemas and validator still come from alp_schema_mcp 0.3.0; this
+repository does not redefine the protocol. Use `mlx_serve_alp.host_tasks` for the
+typed host SDK. Existing signed wire requests remain compatible.

@@ -2,10 +2,10 @@
 import httpx
 import pytest
 from jsonschema import Draft202012Validator
-from vllm_alp.errors import ALPError
 
 from mlx_serve_alp.app import MLXConfig
 from mlx_serve_alp.backend import MLXBackend
+from mlx_serve_alp.errors import ALPError
 from mlx_serve_alp.schema import project_schema
 
 

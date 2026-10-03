@@ -1,38 +1,22 @@
 # Private dependency access
 
-This adapter is Apache-2.0 open source. It depends on two **private** repositories:
-
-| Package | Required version | Repository |
-|---|---|---|
-| alp-schema-mcp | 0.3.0 | https://github.com/omni-runtime/alp_schema_mcp |
-| vllm-alp | 0.2.0 | https://github.com/omni-runtime/vllm-alp |
-
-Obtain access or authorized wheels from their maintainers. Their code and
-contracts are not included in this repository and are not covered by this
-adapter's license. We do not change their visibility or claim to license them.
-
-After authentication with your own Git credential helper:
+This Apache-2.0 adapter requires only one private protocol dependency:
+`alp-schema-mcp==0.3.0`, from https://github.com/omni-runtime/alp_schema_mcp.
+Obtain access or an authorized wheel from its maintainers. Its canonical schemas,
+operation map and validator remain authoritative and are not redistributed here.
+The adapter does not require vllm-alp or a separately installed alp-core.
 
 ```bash
 git clone https://github.com/omni-runtime/alp_schema_mcp.git /path/to/alp_schema_mcp
-git clone https://github.com/omni-runtime/vllm-alp.git /path/to/vllm-alp
-python -m pip install /path/to/alp_schema_mcp /path/to/vllm-alp
+git -C /path/to/alp_schema_mcp checkout c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8
+python -m pip install /path/to/alp_schema_mcp
 python -m pip install -e '.[test]'
 ```
 
-For reproducible installs, use these pinned source revisions (also used by the
-opt-in CI job):
+Do not embed access tokens in URLs, source or reports. The original producer suite
+remains external; pass its authorized path to `run_producer.py --suite`.
 
-- `alp_schema_mcp`: `c2ced6e565fe430ef7d3ccb9d9fe61dc4e45c1c8`
-- `vllm-alp`: `c12d97f79ac5e05f495b9bc8d743f5c3b12b0569`
-
-Do not embed access tokens in clone URLs, requirements files, logs or reports. The original producer
-suite remains in the authorized protocol checkout; `run_producer.py --suite`
-loads it from there. Configure its test catalogs privately; `examples/config.json`
-is an independent demonstration catalog and does not implement the private suite.
-
-Public CI builds source and wheel artifacts and runs lint without installing
-private dependencies. An opt-in test job requires repository variable
-`PRIVATE_DEPENDENCY_TESTS=enabled` and a maintainer-provided read-only
-`PRIVATE_DEPENDENCIES_TOKEN` with access to both dependencies. Without that setup,
-the private-dependency test job is **skipped**, not reported as executed.
+Public CI builds the package and runs lint without private dependencies. The
+opt-in test job requires `PRIVATE_DEPENDENCY_TESTS=enabled` and a read-only
+`PRIVATE_DEPENDENCIES_TOKEN` for alp_schema_mcp. Without those settings it is
+skipped, not reported as executed.

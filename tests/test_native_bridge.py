@@ -8,7 +8,8 @@ import time
 from pathlib import Path
 
 import pytest
-from vllm_alp.strict_grammar import strict_json_grammar
+
+from mlx_serve_alp.strict_grammar import strict_json_grammar
 
 
 @pytest.fixture

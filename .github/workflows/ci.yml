@@ -28,13 +28,6 @@ jobs:
           token: ${{ secrets.PRIVATE_DEPENDENCIES_TOKEN }}
           path: .deps/alp_schema_mcp
           persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: omni-runtime/vllm-alp
-          ref: c12d97f79ac5e05f495b9bc8d743f5c3b12b0569
-          token: ${{ secrets.PRIVATE_DEPENDENCIES_TOKEN }}
-          path: .deps/vllm-alp
-          persist-credentials: false
-      - run: python -m pip install ./.deps/alp_schema_mcp ./.deps/vllm-alp
+      - run: python -m pip install ./.deps/alp_schema_mcp
       - run: python -m pip install -e '.[test]'
       - run: pytest -q

@@ -37,7 +37,7 @@ versions with your build artifacts.
 Keep one private `settings.json` based on `examples/settings.json`. It contains
 absolute executable/model/config paths, `mask_socket`, and credential-file
 references. Use file mode 0600 for settings and keys, and 0700 for the private
-socket/secret directory. Install matching adapter and shared vllm-alp sources;
+socket/secret directory. Install the adapter and authorized alp_schema_mcp dependency;
 version 0.2.0 artifacts predating the strict bridge are not interchangeable.
 
 Start the mask worker before the engine and adapter, in separate processes:

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import httpx
-from vllm_alp.backends.native import decode_native_stream
-from vllm_alp.catalog import stable_json
-from vllm_alp.decoding_state import context_for
-from vllm_alp.errors import ALPError
-from vllm_alp.rendering import render_messages as render_alp_messages
+
+from mlx_serve_alp.catalog import stable_json
+from mlx_serve_alp.decoding_state import context_for
+from mlx_serve_alp.errors import ALPError
+from mlx_serve_alp.rendering import render_messages as render_alp_messages
+
+from .streaming import decode_native_stream
 
 
 def render_messages(request, profile, contracts):

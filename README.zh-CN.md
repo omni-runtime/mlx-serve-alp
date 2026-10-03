@@ -4,8 +4,8 @@
 
 为 Apple Silicon 上的原生 [MLX-Serve](https://github.com/ddalcu/mlx-serve)
 增加 ALP 0.3.0 动作生成接口：`POST /v1/alp/chat/completions`。
-六个操作的协议契约、目录和最终校验复用
-[vllm-alp](https://github.com/omni-runtime/vllm-alp) 与 `alp-schema-mcp`。
+六个操作的权威协议契约与校验来自 `alp-schema-mcp`；目录特化、任务绑定、
+生成约束和接口生命周期由本插件内部维护，无需 vllm-alp 或独立的 alp-core。
 
 MLX-Serve 是原生二进制，没有 vLLM 的 Python endpoint plugin 接口。
 本项目通过带鉴权的 loopback HTTP 连接引擎；推理依旧由 MLX-Serve 完成。
@@ -13,13 +13,13 @@ MLX-Serve 是原生二进制，没有 vLLM 的 Python endpoint plugin 接口。
 
 ## 安装与运行
 
-**`alp_schema_mcp` 和 `vllm-alp` 两个依赖仓库保持私有。使用者必须自行取得
+**协议依赖 `alp_schema_mcp` 保持私有。使用者必须自行取得
 访问权限或经授权的 wheel；仅克隆此公开仓库无法运行。**
 本仓库不分发依赖源码、协议契约或原始测试包，详见 [依赖说明](docs/dependencies.md)。
 
 需要 Python 3.12+、基于 MLX-Serve 26.9.6 构建的 ALP 严格解码版本，以及模型权重。
 原版二进制不满足要求；按[部署指南](docs/deployment.md)构建并启动 mask worker。
-先安装 `alp-schema-mcp==0.3.0` 和 `vllm-alp==0.2.0` 的 wheel 或源码，
+先安装 `alp-schema-mcp==0.3.0` 的 wheel 或源码，
 再运行 `pip install -e '.[test]'`。详细命令见英文 README。
 
 `examples/config.json` 集中配置引擎地址、模型名称和目录；示例目录全部是
@@ -53,7 +53,7 @@ mlx-serve-alp serve --config examples/config.json --host 127.0.0.1 --port 11237
 
 服务端目录可配置 `payload_constraints`，指定任务要求的必填字段和固定值，
 只能收窄现有协议与目录。客户端不能直接覆盖约束，详见[任务约束](docs/task-constraints.md)。
-提示词渲染与 vllm-alp 共享。`compact_prompt: true` 可裁剪未引用定义并保留说明；
+上下文渲染在本插件内部维护。`compact_prompt: true` 可裁剪未引用定义并保留说明；
 `explicit_definition_output: true` 可要求生成时显式填写 `output`。两项默认关闭，
 应针对实际模型评估。最终校验仍兼容协议默认值；参数 Schema 允许空对象时，
 Agent 调用可以省略参数。
@@ -81,12 +81,12 @@ python scripts/run_producer.py --suite /path/to/alp_schema_mcp \
 
 
 可信工具影响级别、环境与资源目录、证据绑定、handler 契约和按名称指定的能力接口，
-均复用 vllm-alp 的共享约束实现。宿主固定值在依赖展开后仍被保留，并在最终校验中
+均使用本插件内部约束实现。宿主固定值在依赖展开后仍被保留，并在最终校验中
 独立复核。`alp.validation_scope` 报告实际检查范围。描述与执行指令分别使用
 `generation_text_limit`、`generation_instruction_limit` 配置；业务同名字段不受影响。
 参见[严格解码说明](docs/strict-decoding.md)中的迁移与测试边界。
 
-结构化宿主调用使用共享的 `AgentCallTask`，固定原文、会话模式和资源引用；
+结构化宿主调用使用 `mlx_serve_alp.host_tasks.AgentCallTask`，固定原文、会话模式和资源引用；
 `DefinitionTask.output_from_capability` 让 Agent 输出与具名能力复用一个接口契约。
 目录可启用 `explicit_session_mode`；`alp.task_constraint_coverage` 报告任务约束覆盖。
 完整 SDK 和签名接入见[任务约束](docs/task-constraints.md)。

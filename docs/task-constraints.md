@@ -2,7 +2,7 @@
 
 ## Typed host task interface
 
-The adapter accepts the shared `vllm_alp.host_tasks` SDK's signed tasks without an
+The adapter accepts the local `mlx_serve_alp.host_tasks` SDK's signed tasks without an
 MLX-specific request format. Construct `AgentCallTask` with `instance_id`, the exact
 `task`, an explicit `session_mode` (`continue` or `isolated`), and authorized
 artifact references. `host_task_headers(request, task, key=...)` binds these fields
@@ -12,7 +12,7 @@ grant execution permissions. Its 16 KiB header limit still applies.
 `DefinitionTask(capabilities=..., output_from_capability="name")` binds both the
 named capability output and the Agent's JSON output to one supplied schema.
 Unknown references fail before sending; there is no generated-schema repair.
-The vllm-alp repository's `scripts/host_call.py --task task.json` is a client for
+This repository's `scripts/host_call.py --task task.json` is a client for
 both adapters. It also accepts the original mutually exclusive `--constraints`.
 
 Set catalog `explicit_session_mode: true` to require newly generated calls to
@@ -99,8 +99,8 @@ not receive this key. The feature is disabled when the config field is absent.
 The existing endpoint API key still controls access.
 
 The host passes reviewed structured task values to
-`vllm_alp.task_context.task_headers(request, constraints, key=key)`, then sends the
-returned headers with that exact ALP request. The vllm-alp repository's
+`mlx_serve_alp.task_context.task_headers(request, constraints, key=key)`, then sends the
+returned headers with that exact ALP request. This repository's
 `scripts/host_call.py` is an executable client for reviewed request/constraint JSON files. It works with both
 vLLM and MLX adapters. Constraints are never extracted from model text or tests.
 
@@ -112,8 +112,8 @@ replay within the lifetime is possible; this token is not an execution idempoten
 key or an authorization grant. The runtime remains responsible for both.
 
 ```python
-from vllm_alp.catalog import PayloadConstraints
-from vllm_alp.task_context import task_headers
+from mlx_serve_alp.catalog import PayloadConstraints
+from mlx_serve_alp.task_context import task_headers
 
 headers = task_headers(request, {
     "agent_call": PayloadConstraints(fixed_values={

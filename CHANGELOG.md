@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Maintain catalog, task binding, grammar, endpoint and stream helpers inside the MLX plugin.
+- Remove the vllm-alp dependency; require only the unchanged alp-schema-mcp 0.3.0 protocol package.
+- Preserve signed host requests and compiled generation constraints across the split.
+
 ## 0.2.1
 
 - Use vllm-alp 0.2.1 compatibility imports backed by the shared alp_schema_mcp runtime.
