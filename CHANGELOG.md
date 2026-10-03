@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Use vllm-alp 0.2.1 compatibility imports backed by the shared alp_schema_mcp runtime.
+- Keep cloud Function Calling in the separate semantic-router-alp project.
+
 ## 0.2.0
 
 - Share configurable compact prompt rendering with vllm-alp 0.2.0.

@@ -29,8 +29,8 @@ See [dependency access](docs/dependencies.md).
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install /path/to/alp_schema_mcp-0.3.0-py3-none-any.whl
-python -m pip install /path/to/vllm_alp-0.2.0-py3-none-any.whl
+python -m pip install /path/to/alp_schema_mcp-0.3.1-py3-none-any.whl
+python -m pip install /path/to/vllm_alp-0.2.1-py3-none-any.whl
 python -m pip install -e '.[test]'
 mlx-serve-alp check --config examples/config.json
 ```
@@ -145,3 +145,10 @@ The adapter checks `/v1/models` before generation. Models that advertise only vi
 audio, image or embedding capabilities are not ALP text generators, even when
 engine health is good. Servers without the strict capability marker are rejected before inference.
 The ALP strict path skips MLX-Serve's generic JSON-schema prompt injection.
+
+## Shared runtime ownership
+
+Engine-independent contracts and task binding now live in `alp_schema_mcp.runtime`
+(package 0.3.1; ALP remains 0.3.0). Existing `vllm_alp` common imports remain
+compatibility aliases. Cloud Function Calling belongs to
+[semantic-router-alp](https://github.com/omni-runtime/semantic-router-alp).

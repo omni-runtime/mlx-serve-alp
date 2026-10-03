@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlx-serve-alp"
-version = "0.2.0"
+version = "0.2.1"
 description = "ALP calling and validated structured generation for native MLX-Serve."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
-dependencies = ["vllm-alp==0.2.0", "httpx>=0.28,<1", "uvicorn>=0.35,<1"]
+dependencies = ["vllm-alp==0.2.1", "httpx>=0.28,<1", "uvicorn>=0.35,<1"]
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "build>=1,<2", "ruff>=0.14"]
